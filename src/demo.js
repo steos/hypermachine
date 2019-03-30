@@ -1,16 +1,19 @@
+import * as R from 'ramda'
 import server from './server'
+import router from './router'
 
-const staticResources = {
-    '/hello': {
-        'handle-ok': 'Hello from Webmachine!',
-        'available-media-types': ['text/plain']
+const db = { '123': { id: '123', text: 'bla', done: false } }
+
+const todoRoutes = {
+  '/todos': {
+    'handle-ok': R.values(db),
+  },
+  '/todos/{id}': ({ id }) => {
+    if (db[id] == null) return null
+    return {
+      'handle-ok': db[id],
     }
+  },
 }
 
-const dispatch = (url) => {
-    const res = staticResources[url]
-    return res || {'exists?': false, 'method-allowed?': true}
-}
-
-server(dispatch)
-
+server(router(todoRoutes))

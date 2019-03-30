@@ -1,4 +1,4 @@
-import {reject, isNil, merge} from 'ramda'
+import { reject, isNil, merge } from 'ramda'
 import DecisionGraph from './decision-graph'
 import resourceDefaults from './resource-defaults'
 
@@ -40,34 +40,42 @@ const dispatch = (context, init = InitialNode) => {
   while (!isHandler(node)) {
     node = evaluateNode(context, node)
   }
-  return {handler: node, status: DecisionGraph[node], context}
+  return { handler: node, status: DecisionGraph[node], context }
 }
 
 const responseBuilder = (status, context, serialize) => result => {
-  if (result == null) return {status, headers: {}}
-  if (isObject(result)) return result
+  if (result == null) return { status, headers: {} }
+  // give chance to return raw response
+  // if (isObject(result)) return result
   const lastModified = evaluate(context, 'last-modified')
-  const body = context.request.method !== 'HEAD'
-    ? (isStr(result) ? result : serialize(result))
-    : ''
-  return {status, body, headers: reject(isNil, {
-    'Content-Type': context.mediaType,
-    'Last-Modified': lastModified ? httpDate(lastModified) : null,
-    'ETag': evaluate(context, 'etag')
-  })}
+  const body =
+    context.request.method !== 'HEAD'
+      ? isStr(result)
+        ? result
+        : serialize(result)
+      : ''
+  return {
+    status,
+    body,
+    headers: reject(isNil, {
+      'Content-Type': context.mediaType,
+      'Last-Modified': lastModified ? httpDate(lastModified) : null,
+      ETag: evaluate(context, 'etag'),
+    }),
+  }
 }
 
 const defaultConfig = {
   serializers: {
     'application/json': x => JSON.stringify(x),
-    'text/plain': x => x => x.toString(),
-  }
+    'text/plain': x => x.toString(),
+  },
 }
 
 const webmachine = (config = defaultConfig) => (resource, request) => {
-  const {handler, status, context} = dispatch({
+  const { handler, status, context } = dispatch({
     resource: merge(resourceDefaults, resource),
-    request
+    request,
   })
   const serialize = config.serializers[context.mediaType]
   const toResponse = responseBuilder(status, context, serialize)
