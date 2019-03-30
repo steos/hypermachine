@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "test": "ava --no-color"
+    "test": "ava --no-color",
+    "demo": "node -r esm src/demo.js"
   },
   "dependencies": {
     "ramda": "^0.25.0"

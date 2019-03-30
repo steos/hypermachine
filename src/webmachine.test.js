@@ -3,7 +3,7 @@ import webmachine, {resource} from './webmachine'
 
 const wm = webmachine()
 
-const req = (method = 'GET', headers = {}, body = '') => ({method, headers, body})
+const req = (method = 'GET', headers = {}, body = null) => ({method, headers, body})
 
 const GET = (headers = {}) => req('GET', headers)
 
@@ -12,13 +12,12 @@ const POST = (body, headers = {}) => req('POST', headers, body)
 const jsonPOST = (entity, headers = {}) => POST(JSON.stringify(entity), headers)
 
 const validateJson = context => {
-    if (context.request.body) {
-        try {
-            context.entity = JSON.parse(context.request.body)
-            return false
-        } catch (e) {
-            return true
-        }
+    if (context.request.body == null) return false
+    try {
+        context.entity = JSON.parse(context.request.body)
+        return false
+    } catch (e) {
+        return true
     }
 }
 

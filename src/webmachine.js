@@ -44,6 +44,7 @@ const dispatch = (context, init = InitialNode) => {
 }
 
 const responseBuilder = (status, context, serialize) => result => {
+  if (result == null) return {status, headers: {}}
   if (isObject(result)) return result
   const lastModified = evaluate(context, 'last-modified')
   const body = context.request.method !== 'HEAD'
@@ -70,7 +71,7 @@ const webmachine = (config = defaultConfig) => (resource, request) => {
   })
   const serialize = config.serializers[context.mediaType]
   const toResponse = responseBuilder(status, context, serialize)
-  return toResponse(evaluate(context, handler, ''))
+  return toResponse(evaluate(context, handler))
 }
 
 export default webmachine

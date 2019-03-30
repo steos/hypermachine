@@ -82,7 +82,8 @@ export default {
         context.resource['allowed-methods'].includes(context.request.method),
 
     'accept-exists?': context => {
-        if (context.request.headers['accept'] != null) {
+        const {accept} = context.request.headers
+        if (accept != null && accept !== '*/*') {
             return true
         }
 
