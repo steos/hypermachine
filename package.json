@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "test": "ava --no-color",
+    "test": "ava --no-color -v",
     "demo": "node -r esm src/demo.js"
   },
   "dependencies": {
@@ -11,6 +11,8 @@
     "esm": "^3.0.17"
   },
   "ava": {
-    "require": ["esm"]
+    "require": [
+      "esm"
+    ]
   }
 }
