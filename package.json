@@ -1,18 +1,27 @@
 {
   "scripts": {
     "test": "ava --no-color -v",
-    "demo": "node -r esm src/demo.js"
+    "demo": "node -r ts-node/register src/demo.ts"
   },
   "dependencies": {
-    "ramda": "^0.25.0"
+    "@types/node": "^12.7.11",
+    "@types/ramda": "^0.26.26",
+    "ramda": "^0.26.1"
   },
   "devDependencies": {
-    "ava": "^0.25.0",
-    "esm": "^3.0.17"
+    "ava": "^2.4.0",
+    "esm": "^3.0.17",
+    "nodemon": "^1.19.3",
+    "ts-node": "^8.4.1",
+    "typescript": "^3.6.3"
   },
   "ava": {
+    "compileEnhancements": false,
+    "extensions": [
+      "ts"
+    ],
     "require": [
-      "esm"
+      "ts-node/register"
     ]
   }
 }
