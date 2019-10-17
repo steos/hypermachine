@@ -497,7 +497,7 @@ const resolve = async <T>(
 
 const headers = (request: HttpRequest, context: Context, trace: TraceNode[]): HttpHeaders => {
   const enableTrace = request.headers[traceHeaderName.toLowerCase()] === 'enable'
-  const headers = {}
+  const headers: HttpHeaders = {}
   if (enableTrace) {
     headers[traceHeaderName] = trace.map(({ node, value }) =>
       [node.name, value].filter(x => x).join(' ')
