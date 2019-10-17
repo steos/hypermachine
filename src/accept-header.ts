@@ -34,12 +34,12 @@ const param = token.chain(name =>
 )
 
 const mediaRange = P.lexeme(mediaType).chain(({ type, subtype }) =>
-  P.char(';')
-    .chain(() => quality)
+  P.lexeme(P.char(';'))
+    .chain(() => P.lexeme(quality))
     .optional(1)
     .chain(q =>
-      P.char(';')
-        .chain(() => param)
+      P.lexeme(P.char(';'))
+        .chain(() => P.lexeme(param))
         .repeat()
         .chain(params => P.pure<MediaRange>({ type, subtype, quality: q, params }))
     )

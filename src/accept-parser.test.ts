@@ -50,3 +50,25 @@ test('foo/bar;baz=quux, text/*;q=0.7 */*;q=0.5', t => {
     { type: '*', subtype: '*', quality: 0.5, params: [] },
   ])
 })
+
+test('audio/*; q=0.2, audio/basic', t => {
+  const result = acceptHeader.parse('audio/*; q=0.2, audio/basic')
+  t.assert(result.length === 1)
+  const [[ms, remaining]] = result
+  t.is(remaining, '')
+  t.deepEqual(ms, [
+    { type: 'audio', subtype: '*', quality: 0.2, params: [] },
+    { type: 'audio', subtype: 'basic', quality: 1, params: [] },
+  ])
+})
+
+test('text/*  ;  q=0.2  ,  text/html', t => {
+  const result = acceptHeader.parse('text/*  ;  q=0.2  ,  text/html')
+  t.assert(result.length === 1)
+  const [[ms, remaining]] = result
+  t.is(remaining, '')
+  t.deepEqual(ms, [
+    { type: 'text', subtype: '*', quality: 0.2, params: [] },
+    { type: 'text', subtype: 'html', quality: 1, params: [] },
+  ])
+})
