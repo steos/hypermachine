@@ -17,7 +17,7 @@ export type MediaRange = MediaType & {
 
 const token = P.regex(/^[^\s;,/="]+/)
 
-const qf = P.regex(/^\d(\.\d{1,3})/)
+const qf = P.regex(/^\d(\.\d{1,3})?/)
 
 const str = P.regex(/^"[^"]+"/).map(s => s.substring(1, s.length - 1))
 
@@ -45,10 +45,16 @@ const mediaRange = P.lexeme(mediaType).chain(({ type, subtype }) =>
     )
 )
 
-const acceptHeader = mediaRange.chain(accept =>
+export const parser = mediaRange.chain(accept =>
   P.lexeme(P.char(','))
     .chain(() => mediaRange)
     .repeat()
     .chain(xs => P.pure([accept].concat(xs)))
 )
-export default acceptHeader
+
+export const rankMediaRange = ({ type, subtype, params }: MediaRange) => {
+  return params.length + (type === '*' ? 0 : 1) + (subtype === '*' ? 0 : 1)
+}
+
+export const compareMediaRange = (a: MediaRange, b: MediaRange) =>
+  rankMediaRange(b) - rankMediaRange(a)
