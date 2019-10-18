@@ -53,7 +53,12 @@ test('foo/bar;baz=quux, text/*;q=0.7 */*;q=0.5', t => {
   t.assert(result.length === 1)
   const [[ms]] = result
   t.deepEqual(ms, [
-    { type: 'foo', subtype: 'bar', quality: 1, params: [{ name: 'baz', value: 'quux' }] },
+    {
+      type: 'foo',
+      subtype: 'bar',
+      quality: 1,
+      params: [{ name: 'baz', value: 'quux' }],
+    },
     { type: 'text', subtype: '*', quality: 0.7, params: [] },
     { type: '*', subtype: '*', quality: 0.5, params: [] },
   ])
@@ -82,11 +87,11 @@ test('text/*  ;  q=0.2  ,  text/html', t => {
 })
 
 test('rankMediaRange', t => {
-  t.is(0, rankMediaRange({ type: '*', subtype: '*', quality: 1, params: [] }))
-  t.is(1, rankMediaRange({ type: 'text', subtype: '*', quality: 1, params: [] }))
-  t.is(2, rankMediaRange({ type: 'text', subtype: 'html', quality: 1, params: [] }))
+  t.is(1, rankMediaRange({ type: '*', subtype: '*', quality: 1, params: [] }))
+  t.is(2, rankMediaRange({ type: 'text', subtype: '*', quality: 1, params: [] }))
+  t.is(3, rankMediaRange({ type: 'text', subtype: 'html', quality: 1, params: [] }))
   t.is(
-    3,
+    4,
     rankMediaRange({
       type: 'text',
       subtype: 'html',
@@ -95,7 +100,7 @@ test('rankMediaRange', t => {
     })
   )
   t.is(
-    4,
+    5,
     rankMediaRange({
       type: 'text',
       subtype: 'html',

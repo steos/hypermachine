@@ -19,3 +19,8 @@ test('negotiateMediaType with no acceptable', t => {
   const type = negotiateMediaType('text/*, text/html;q=0', ['text/html'])
   t.is(type, null)
 })
+
+test('negotiateMediaType with multiple quality values', t => {
+  const type = negotiateMediaType('text/html; q=0.5, text/json; q=0.8', ['text/html', 'text/json'])
+  t.is(type, 'text/json')
+})

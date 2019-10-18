@@ -52,8 +52,8 @@ export const parser = mediaRange.chain(accept =>
     .chain(xs => P.pure([accept].concat(xs)))
 )
 
-export const rankMediaRange = ({ type, subtype, params }: MediaRange) => {
-  return params.length + (type === '*' ? 0 : 1) + (subtype === '*' ? 0 : 1)
+export const rankMediaRange = ({ type, subtype, params, quality }: MediaRange) => {
+  return params.length + (type === '*' ? 0 : 1) + (subtype === '*' ? 0 : 1) + quality
 }
 
 export const compareMediaRange = (a: MediaRange, b: MediaRange) =>
