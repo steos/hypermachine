@@ -330,7 +330,7 @@ export interface Directives<T> {
   readonly 'available-encodings': string[]
 }
 
-export type ResourceConfig<T, U> = {
+export type ResourceConfig<T, U = {}> = {
   [S in Handle | Action | Is]?: (S extends Handle
     ? Lazy<T, U & Context>
     : S extends Action
@@ -509,8 +509,10 @@ const headers = (request: HttpRequest, context: Context, trace: TraceNode[]): Ht
   return headers
 }
 
+export type Resource<T, U = {}> = Partial<ResourceConfig<T, U & Context>>
+
 const webmachine = async <T, U>(
-  resource: Partial<ResourceConfig<T, U & Context>>,
+  resource: Resource<T, U>,
   request: HttpRequest,
   userContext: U
 ): Promise<HttpResponse> => {
