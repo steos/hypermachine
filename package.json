@@ -1,7 +1,6 @@
 {
   "scripts": {
-    "test": "ava --no-color -v",
-    "demo": "node -r ts-node/register src/demo.ts"
+    "test": "ava --no-color -v"
   },
   "dependencies": {
     "@types/node": "^12.11.1",

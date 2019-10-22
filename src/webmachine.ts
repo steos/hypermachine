@@ -316,9 +316,9 @@ const whenServiceAvailable = decision(
   handleServiceNotAvailable
 )
 
-export type Lazy<T> = T | Promise<T> | ((context: Context) => T | Promise<T>)
+export type Lazy<T, U> = T | Promise<T> | ((context: U & Context) => T | Promise<T>)
 
-export type ActionFn = () => Promise<void> | void
+export type ActionFn<T> = (context: T & Context) => Promise<void> | void
 
 type MediaTypes<T> = Record<string, Serializer<T>>
 
@@ -330,19 +330,19 @@ export interface Directives<T> {
   readonly 'available-encodings': string[]
 }
 
-export type ResourceConfig<T> = {
+export type ResourceConfig<T, U> = {
   [S in Handle | Action | Is]?: (S extends Handle
-    ? Lazy<T>
+    ? Lazy<T, U & Context>
     : S extends Action
-    ? ActionFn
-    : Lazy<boolean>)
+    ? ActionFn<U & Context>
+    : Lazy<boolean, U & Context>)
 } &
   Directives<T>
 
 export interface HttpRequest {
   readonly headers: HttpHeaders
   readonly url: string
-  readonly body: HttpBody
+  readonly body?: HttpBody
   readonly method: string
 }
 
@@ -361,7 +361,7 @@ export type HttpBody = string | AsyncIterable<any>
 
 export type Serializer<T> = (x: T) => HttpBody
 
-type HttpHeaders = Record<string, string | string[] | undefined>
+export type HttpHeaders = Record<string, string | string[] | undefined>
 
 export interface HttpResponse {
   readonly body?: HttpBody
@@ -380,7 +380,7 @@ const headerEquals = (header: string, value: string) => (context: Context) =>
 const matchEtag = (header: string) => (context: Context) =>
   context.etag === context.request.headers[header]
 
-const defaultResourceConfig: ResourceConfig<any> = {
+const defaultResourceConfig: ResourceConfig<any, Context> = {
   'allowed-methods': ['GET', 'HEAD'],
   'available-media-types': { 'application/json': (x: any) => JSON.stringify(x) },
   'available-languages': ['*'],
@@ -468,17 +468,17 @@ interface TraceNode {
 
 const traceHeaderName = 'X-Webmachine-Trace'
 
-const unwrap = async <T>(val: Lazy<T>, context: Context): Promise<T> => {
+const unwrap = async <T, U>(val: Lazy<T, U>, context: U & Context): Promise<T> => {
   if (val instanceof Function) {
     return val(context)
   }
   return val
 }
 
-const resolve = async <T>(
+const resolve = async <T, U>(
   node: TreeNode,
-  resource: ResourceConfig<T>,
-  context: Context,
+  resource: ResourceConfig<T, U & Context>,
+  context: U & Context,
   trace: TraceNode[]
 ): Promise<HandlerNode> => {
   if (node.kind === 'handler') {
@@ -490,8 +490,8 @@ const resolve = async <T>(
     return resolve(node.next, resource, context, trace)
   } else if (node.kind === 'decision') {
     const val = resource[node.name]
-    const x: boolean | null = val ? await unwrap(val, context) : null
-    trace.push({ node, value: x != null ? x.toString() : 'null' })
+    const x: boolean | null = val !== undefined ? await unwrap(val, context) : null
+    trace.push({ node, value: JSON.stringify(x) })
     const next: TreeNode = x ? node.whenTrue : node.whenFalse
     return resolve(next, resource, context, trace)
   }
@@ -503,18 +503,20 @@ const headers = (request: HttpRequest, context: Context, trace: TraceNode[]): Ht
   const headers: HttpHeaders = {}
   if (enableTrace) {
     headers[traceHeaderName] = trace.map(({ node, value }) =>
-      [node.name, value].filter(x => x).join(' ')
+      [node.name, value].filter(x => x !== undefined).join(' ')
     )
   }
   return headers
 }
 
-const webmachine = async <T>(
-  resource: Partial<ResourceConfig<T>>,
-  request: HttpRequest
+const webmachine = async <T, U>(
+  resource: Partial<ResourceConfig<T, U & Context>>,
+  request: HttpRequest,
+  userContext: U
 ): Promise<HttpResponse> => {
-  const res: ResourceConfig<T> = { ...defaultResourceConfig, ...resource }
-  const context: Context = {
+  const res: ResourceConfig<T, U> = { ...defaultResourceConfig, ...resource }
+  const context: U & Context = {
+    ...userContext,
     request,
     allowedMethods: res['allowed-methods'],
     availableMediaTypes: Object.keys(res['available-media-types']),
@@ -522,10 +524,9 @@ const webmachine = async <T>(
     availableCharsets: res['available-charsets'],
     availableEncodings: res['available-encodings'],
   }
+
   const trace: TraceNode[] = []
   const node: HandlerNode = await resolve(whenServiceAvailable, res, context, trace)
-  // console.log(node)
-  // console.log(trace.map(({ node, value }) => [node.name, value].join(' ')))
   const mediaType: string | undefined = context.mediaType
   if (mediaType === undefined) throw new Error('failed to negotiate mediaType')
   const serializer: Serializer<T> = res['available-media-types'][mediaType]
