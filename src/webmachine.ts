@@ -320,9 +320,11 @@ export type Lazy<T> = T | Promise<T> | ((context: Context) => T | Promise<T>)
 
 export type ActionFn = () => Promise<void> | void
 
-export interface Directives {
+type MediaTypes<T> = Record<string, Serializer<T>>
+
+export interface Directives<T> {
   readonly 'allowed-methods': string[]
-  readonly 'available-media-types': string[]
+  readonly 'available-media-types': MediaTypes<T>
   readonly 'available-languages': string[]
   readonly 'available-charsets': string[]
   readonly 'available-encodings': string[]
@@ -335,7 +337,7 @@ export type ResourceConfig<T> = {
     ? ActionFn
     : Lazy<boolean>)
 } &
-  Directives
+  Directives<T>
 
 export interface HttpRequest {
   readonly headers: HttpHeaders
@@ -348,15 +350,16 @@ export type Context = {
   mediaType?: string
   etag?: string
   readonly request: HttpRequest
-} & Directives
+  readonly availableMediaTypes: string[]
+  readonly allowedMethods: string[]
+  readonly availableLanguages: string[]
+  readonly availableCharsets: string[]
+  readonly availableEncodings: string[]
+}
 
 export type HttpBody = string | AsyncIterable<any>
 
 export type Serializer<T> = (x: T) => HttpBody
-
-export interface Config<T> {
-  readonly serializers: Record<string, Serializer<T>>
-}
 
 type HttpHeaders = Record<string, string | string[] | undefined>
 
@@ -379,7 +382,7 @@ const matchEtag = (header: string) => (context: Context) =>
 
 const defaultResourceConfig: ResourceConfig<any> = {
   'allowed-methods': ['GET', 'HEAD'],
-  'available-media-types': ['application/json'],
+  'available-media-types': { 'application/json': (x: any) => JSON.stringify(x) },
   'available-languages': ['*'],
   'available-charsets': ['UTF-8'],
   'available-encodings': ['identity'],
@@ -440,7 +443,7 @@ const defaultResourceConfig: ResourceConfig<any> = {
       : false,
 
   'method-allowed?': context =>
-    context.request.method ? context['allowed-methods'].includes(context.request.method) : false,
+    context.request.method ? context.allowedMethods.includes(context.request.method) : false,
 
   'accept-exists?': context => {
     const { accept } = context.request.headers
@@ -450,7 +453,7 @@ const defaultResourceConfig: ResourceConfig<any> = {
 
     // TODO negotiate using "*/*" as accept header
 
-    const [mediaType] = context['available-media-types']
+    const [mediaType] = context.availableMediaTypes
     context.mediaType = mediaType
     return false
   },
@@ -506,18 +509,18 @@ const headers = (request: HttpRequest, context: Context, trace: TraceNode[]): Ht
   return headers
 }
 
-const webmachine = <T>(config: Config<T>) => async (
+const webmachine = async <T>(
   resource: Partial<ResourceConfig<T>>,
   request: HttpRequest
 ): Promise<HttpResponse> => {
   const res: ResourceConfig<T> = { ...defaultResourceConfig, ...resource }
   const context: Context = {
     request,
-    'allowed-methods': res['allowed-methods'],
-    'available-media-types': res['available-media-types'],
-    'available-languages': res['available-languages'],
-    'available-charsets': res['available-charsets'],
-    'available-encodings': res['available-encodings'],
+    allowedMethods: res['allowed-methods'],
+    availableMediaTypes: Object.keys(res['available-media-types']),
+    availableLanguages: res['available-languages'],
+    availableCharsets: res['available-charsets'],
+    availableEncodings: res['available-encodings'],
   }
   const trace: TraceNode[] = []
   const node: HandlerNode = await resolve(whenServiceAvailable, res, context, trace)
@@ -525,7 +528,7 @@ const webmachine = <T>(config: Config<T>) => async (
   // console.log(trace.map(({ node, value }) => [node.name, value].join(' ')))
   const mediaType: string | undefined = context.mediaType
   if (mediaType === undefined) throw new Error('failed to negotiate mediaType')
-  const serializer: Serializer<T> = config.serializers[mediaType]
+  const serializer: Serializer<T> = res['available-media-types'][mediaType]
   const handler = resource[node.name]
   const result = handler ? await unwrap(handler, context) : null
   const body = result ? serializer(result) : undefined

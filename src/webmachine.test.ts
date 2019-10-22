@@ -1,8 +1,8 @@
 import test from 'ava'
 
-import webmachine, { HttpRequest, ResourceConfig, Context } from './webmachine'
-import * as wm from './webmachine'
-import { IncomingMessage } from 'http'
+import webmachine, { ResourceConfig, Context } from './webmachine'
+// import * as wm from './webmachine'
+// import { IncomingMessage } from 'http'
 
 type MyError = { error: string }
 interface MyThing {
@@ -11,14 +11,6 @@ interface MyThing {
 }
 type MyThingCollection = { items: MyThing[]; meta: string }
 type MyResponse = MyError | MyThing | MyThingCollection
-
-const config: wm.Config<MyResponse> = {
-  serializers: {
-    'application/json': x => JSON.stringify(x),
-  },
-}
-
-const webm = webmachine(config)
 
 test('minimal resource', async t => {
   const body = { foo: 'asdf', bar: false }
@@ -34,7 +26,7 @@ test('minimal resource', async t => {
     },
   }
 
-  const result = await webm(resource, {
+  const result = await webmachine(resource, {
     method: 'GET',
     headers: { 'x-webmachine-trace': 'enable' },
     url: '',
