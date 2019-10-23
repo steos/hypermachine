@@ -1,5 +1,6 @@
 import http, { IncomingMessage, ServerResponse } from 'http'
 import webmachine, { Resource } from './webmachine'
+import router, { RouteArgs, RouteTable } from './router'
 
 type Todo = {
   id: string
@@ -14,26 +15,18 @@ const todos: TodoDb = {
   _2: { id: '_2', text: 'foo bar', done: true },
 }
 
-type Lazy<T> = T | Promise<T> | (() => T | Promise<T>)
-
-type RouteValue<T> = Lazy<T | null>
-
-type RouteArgs = Record<string, RouteValue<any>>
-
-// type RoutingTable
-
-const collectionResource: RouteValue<Resource<TodoDb>> = {
-  'handle-ok': () => todos,
+const collectionResource: Resource<Todo[]> = {
+  'handle-ok': () => Object.values(todos),
 }
 
-const entityResource = ({ id }: RouteArgs): RouteValue<Resource<Todo>> => {
+const entityResource = ({ id }: RouteArgs): Resource<Todo> | null => {
   const todo = todos[id]
   if (!todo) return null
   return {
     'allowed-methods': ['HEAD', 'GET', 'PUT'],
     'new?': false,
     'respond-with-entity?': true,
-    'handle-ok': todos[id],
+    'handle-ok': todo,
     'malformed?': context => {
       //TODO
       return false
@@ -44,47 +37,22 @@ const entityResource = ({ id }: RouteArgs): RouteValue<Resource<Todo>> => {
   }
 }
 
-const todoRoutes = {
+const todoRoutes: RouteTable<Resource<any>> = {
   '/todos': collectionResource,
   '/todos/{id}': entityResource,
-}
-
-interface VarSegment {
-  kind: 'var'
-  name: string
-}
-interface LiteralSegment {
-  kind: 'literal'
-  value: string
-}
-type RouteSegment = VarSegment | LiteralSegment
-
-const parsePathSegment = (segment: string): RouteSegment => {
-  if (segment.startsWith('{') && segment.endsWith('}')) {
-    return { kind: 'var', name: segment.substring(0, segment.length - 1) }
-  } else {
-    return { kind: 'literal', value: segment }
-  }
-}
-
-const router = (routes: Record<string, any>) => (path: string) => {
-  const segments = path.split('/').map(parsePathSegment)
-
-  const match = routes[segments[0]]
-  if (match) {
-    //TODO
-    return match
-  }
-  return null
 }
 
 const route = router(todoRoutes)
 
 const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
-  //TODO
   if (!req.url) throw new Error()
   if (!req.method) throw new Error()
-  const resource = route(req.url)
+  const resource = await route(req.url)
+  if (resource === null) {
+    res.writeHead(404)
+    res.end()
+    return
+  }
   const response = await webmachine(
     resource,
     {
@@ -95,10 +63,15 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     },
     {}
   )
+  //   console.dir(response, { depth: 10 })
   res.writeHead(response.status, response.headers)
   if (response.body) {
-    for await (const chunk of response.body) {
-      res.write(chunk)
+    if (typeof response.body === 'string') {
+      res.write(response.body)
+    } else {
+      for await (const chunk of response.body) {
+        res.write(chunk)
+      }
     }
   }
   res.end()
