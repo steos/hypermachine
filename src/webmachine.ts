@@ -331,13 +331,15 @@ export interface Directives<T> {
 }
 
 export type ResourceConfig<T, U = {}> = {
-  [S in Handle | Action | Is]?: (S extends Handle
+  readonly [S in Handle | Action | Is]?: (S extends Handle
     ? Lazy<T, U & Context>
     : S extends Action
     ? ActionFn<U & Context>
     : Lazy<boolean, U & Context>)
 } &
   Directives<T>
+
+export type Resource<T, U = {}> = Partial<ResourceConfig<T, U & Context>>
 
 export interface HttpRequest {
   readonly headers: HttpHeaders
@@ -498,18 +500,17 @@ const resolve = async <T, U>(
   throw new Error()
 }
 
+const printTraceNode = ({ node, value }: TraceNode): string =>
+  [node.name, value].filter(x => x !== undefined).join(' ')
+
 const headers = (request: HttpRequest, context: Context, trace: TraceNode[]): HttpHeaders => {
   const enableTrace = request.headers[traceHeaderName.toLowerCase()] === 'enable'
   const headers: HttpHeaders = {}
   if (enableTrace) {
-    headers[traceHeaderName] = trace.map(({ node, value }) =>
-      [node.name, value].filter(x => x !== undefined).join(' ')
-    )
+    headers[traceHeaderName] = trace.map(printTraceNode)
   }
   return headers
 }
-
-export type Resource<T, U = {}> = Partial<ResourceConfig<T, U & Context>>
 
 const webmachine = async <T, U>(
   resource: Resource<T, U>,
@@ -529,12 +530,19 @@ const webmachine = async <T, U>(
 
   const trace: TraceNode[] = []
   const node: HandlerNode = await resolve(whenServiceAvailable, res, context, trace)
-  const mediaType: string | undefined = context.mediaType
-  if (mediaType === undefined) throw new Error('failed to negotiate mediaType')
-  const serializer: Serializer<T> = res['available-media-types'][mediaType]
   const handler = resource[node.name]
   const result = handler ? await unwrap(handler, context) : null
-  const body = result ? serializer(result) : undefined
+
+  let body = undefined
+  if (result !== null) {
+    const mediaType: string | undefined = context.mediaType
+    if (mediaType === undefined) {
+      const traceStr = trace.map(printTraceNode).join(`\n`)
+      throw new Error(`failed to negotiate mediaType\n${traceStr}`)
+    }
+    const serializer: Serializer<T> = res['available-media-types'][mediaType]
+    body = serializer(result)
+  }
   return { body, status: node.status, headers: headers(request, context, trace) }
 }
 

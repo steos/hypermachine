@@ -1,5 +1,5 @@
 import http from 'http'
-import { Resource } from './webmachine'
+import { Resource, HttpBody } from './webmachine'
 import router, { RouteArgs, RouteTable } from './router'
 import requestHandler from './request-handler'
 
@@ -20,20 +20,46 @@ const collectionResource: Resource<Todo[]> = {
   'handle-ok': () => Object.values(todos),
 }
 
-const entityResource = ({ id }: RouteArgs): Resource<Todo> | null => {
-  const todo = todos[id]
-  if (!todo) return null
+const readBody = async (body: HttpBody, encoding: string = 'utf8') => {
+  if (typeof body === 'string') return body
+  let str = ''
+  for await (let chunk of body) {
+    if (typeof chunk === 'string') {
+      str += chunk
+    } else if (chunk instanceof Buffer) {
+      str += chunk.toString(encoding)
+    }
+  }
+  return str
+}
+
+type EntityContext = {
+  entity: any
+}
+
+const entityResource = ({ id }: RouteArgs): Resource<Todo, EntityContext> | null => {
+  if (!todos[id]) return null
   return {
     'allowed-methods': ['HEAD', 'GET', 'PUT'],
     'new?': false,
     'respond-with-entity?': true,
-    'handle-ok': todo,
-    'malformed?': context => {
+    'handle-ok': () => todos[id],
+    'malformed?': async context => {
       //TODO
+      if (!context.request.body) return false
+      const body = await readBody(context.request.body)
+      if (body.length < 1) return false
+      //   console.log('body', body)
+      try {
+        context.entity = JSON.parse(body)
+      } catch (e) {
+        return true
+      }
       return false
     },
-    'put!': () => {
-      //TODO
+    'put!': context => {
+      //   console.log('PUT!', context.entity)
+      todos[id] = context.entity
     },
   }
 }
