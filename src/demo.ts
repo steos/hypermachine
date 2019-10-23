@@ -1,6 +1,7 @@
-import http, { IncomingMessage, ServerResponse } from 'http'
-import webmachine, { Resource } from './webmachine'
+import http from 'http'
+import { Resource } from './webmachine'
 import router, { RouteArgs, RouteTable } from './router'
+import requestHandler from './request-handler'
 
 type Todo = {
   id: string
@@ -44,38 +45,7 @@ const todoRoutes: RouteTable<Resource<any>> = {
 
 const route = router(todoRoutes)
 
-const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
-  if (!req.url) throw new Error()
-  if (!req.method) throw new Error()
-  const resource = await route(req.url)
-  if (resource === null) {
-    res.writeHead(404)
-    res.end()
-    return
-  }
-  const response = await webmachine(
-    resource,
-    {
-      method: req.method,
-      headers: req.headers,
-      url: req.url,
-      body: req,
-    },
-    {}
-  )
-  //   console.dir(response, { depth: 10 })
-  res.writeHead(response.status, response.headers)
-  if (response.body) {
-    if (typeof response.body === 'string') {
-      res.write(response.body)
-    } else {
-      for await (const chunk of response.body) {
-        res.write(chunk)
-      }
-    }
-  }
-  res.end()
-}
+const handleRequest = requestHandler(route)
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080
 

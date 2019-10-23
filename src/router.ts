@@ -75,7 +75,9 @@ const buildRouteMatcher = <T>(route: string, value: RouteValue<T>): RouteMatcher
 
 export type RouteTable<T> = Record<string, RouteValue<T>>
 
-const router = <T>(routes: RouteTable<T>) => {
+export type Router<T> = (path: string) => Promise<T | null>
+
+const router = <T>(routes: RouteTable<T>): Router<T> => {
   const matchers = Object.entries(routes).map(([route, value]) => buildRouteMatcher(route, value))
   return async (path: string): Promise<T | null> => {
     for (let matcher of matchers) {
