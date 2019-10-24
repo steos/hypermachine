@@ -1,5 +1,5 @@
 import http from 'http'
-import { Resource, HttpBody } from './webmachine'
+import { Resource, readHttpBody } from './webmachine'
 import router, { RouteArgs, RouteTable } from './router'
 import requestHandler from './request-handler'
 
@@ -20,19 +20,6 @@ const collectionResource: Resource<Todo[]> = {
   'handle-ok': () => Object.values(todos),
 }
 
-const readBody = async (body: HttpBody, encoding: string = 'utf8') => {
-  if (typeof body === 'string') return body
-  let str = ''
-  for await (let chunk of body) {
-    if (typeof chunk === 'string') {
-      str += chunk
-    } else if (chunk instanceof Buffer) {
-      str += chunk.toString(encoding)
-    }
-  }
-  return str
-}
-
 type TodoPayload = Partial<Omit<Todo, 'id'>>
 
 const entityResource = ({ id }: RouteArgs): Resource<Todo> | null => {
@@ -45,7 +32,7 @@ const entityResource = ({ id }: RouteArgs): Resource<Todo> | null => {
     'handle-ok': () => todos[id],
     'malformed?': async context => {
       if (!context.request.body) return false
-      const body = await readBody(context.request.body)
+      const body = await readHttpBody(context.request.body)
       if (body.length < 1) return false
       try {
         // TODO this is not safe, use io-ts

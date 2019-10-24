@@ -330,7 +330,7 @@ export interface Directives<T> {
   readonly 'available-encodings': string[]
 }
 
-export type ResourceConfig<T, U = {}> = {
+export type ResourceConfig<T> = {
   readonly [S in Handle | Action | Is]?: (S extends Handle
     ? Lazy<T>
     : S extends Action
@@ -344,7 +344,7 @@ export type Resource<T> = Partial<ResourceConfig<T>>
 export interface HttpRequest {
   readonly headers: HttpHeaders
   readonly url: string
-  readonly body?: HttpBody
+  readonly body: HttpBody
   readonly method: string
 }
 
@@ -382,7 +382,7 @@ const headerEquals = (header: string, value: string) => (context: Context) =>
 const matchEtag = (header: string) => (context: Context) =>
   context.etag === context.request.headers[header]
 
-const defaultResourceConfig: ResourceConfig<any, Context> = {
+const defaultResourceConfig: ResourceConfig<any> = {
   'allowed-methods': ['GET', 'HEAD'],
   'available-media-types': { 'application/json': (x: any) => JSON.stringify(x) },
   'available-languages': ['*'],
@@ -542,6 +542,19 @@ const webmachine = async <T>(
     body = serializer(result)
   }
   return { body, status: node.status, headers: headers(request, context, trace) }
+}
+
+export const readHttpBody = async (body: HttpBody, encoding: string = 'utf8'): Promise<string> => {
+  if (typeof body === 'string') return body
+  let str = ''
+  for await (let chunk of body) {
+    if (typeof chunk === 'string') {
+      str += chunk
+    } else if (chunk instanceof Buffer) {
+      str += chunk.toString(encoding)
+    }
+  }
+  return str
 }
 
 export default webmachine
