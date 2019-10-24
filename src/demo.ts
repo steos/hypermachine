@@ -1,5 +1,5 @@
 import http from 'http'
-import { Resource, readHttpBody } from './webmachine'
+import { Resource, readHttpBody, Context } from './webmachine'
 import router, { RouteArgs, RouteTable } from './router'
 import requestHandler from './request-handler'
 
@@ -9,44 +9,71 @@ type Todo = {
   done: boolean
 }
 
-type TodoDb = Record<string, Todo>
-
-const todos: TodoDb = {
-  _1: { id: '_1', text: 'lorem ipsum', done: false },
-  _2: { id: '_2', text: 'foo bar', done: true },
+type Db = {
+  todos: Record<string, Todo>
+  nextId: number
 }
 
-const collectionResource: Resource<Todo[]> = {
-  'handle-ok': () => Object.values(todos),
+const db: Db = {
+  todos: {
+    _1: { id: '_1', text: 'lorem ipsum', done: false },
+    _2: { id: '_2', text: 'foo bar', done: true },
+  },
+  nextId: 3,
+}
+
+const collectionResource: () => Resource<Todo[]> = () => {
+  let entity: any = null
+  let todo: Todo | null = null
+  return {
+    'allowed-methods': ['HEAD', 'GET', 'POST'],
+    'malformed?': json(x => {
+      entity = x
+    }),
+    'post!': () => {
+      //TODO
+      const id = `_${db.nextId}`
+      todo = { ...entity, id }
+      db.todos[id] = todo!
+      db.nextId++
+      //   console.log('post!', entity)
+    },
+    'handle-ok': () => Object.values(db.todos),
+    'handle-created': () => entity,
+  }
 }
 
 type TodoPayload = Partial<Omit<Todo, 'id'>>
 
+const json = (onSuccess: (x: any) => void) => async (context: Context) => {
+  const body = await readHttpBody(context.request.body)
+  if (body.length < 1) return false
+  try {
+    // TODO this is not safe, use io-ts
+    const entity = JSON.parse(body)
+    if (entity === null) return true
+    onSuccess(entity)
+  } catch (e) {
+    return true
+  }
+  return false
+}
+
 const entityResource = ({ id }: RouteArgs): Resource<Todo> | null => {
-  if (!todos[id]) return null
+  if (!db.todos[id]) return null
   let entity: TodoPayload | null = null
   return {
     'allowed-methods': ['HEAD', 'GET', 'PUT'],
     'new?': false,
     'respond-with-entity?': true,
-    'handle-ok': () => todos[id],
-    'malformed?': async context => {
-      if (!context.request.body) return false
-      const body = await readHttpBody(context.request.body)
-      if (body.length < 1) return false
-      try {
-        // TODO this is not safe, use io-ts
-        entity = JSON.parse(body)
-        if (entity === null) return true
-      } catch (e) {
-        return true
-      }
-      return false
-    },
+    'handle-ok': () => db.todos[id],
+    'malformed?': json(x => {
+      entity = x
+    }),
     'put!': () => {
       if (entity === null) throw new Error()
-      const todo: Todo = { ...todos[id], ...entity, id }
-      todos[id] = todo
+      const todo: Todo = { ...db.todos[id], ...entity, id }
+      db.todos[id] = todo
     },
   }
 }

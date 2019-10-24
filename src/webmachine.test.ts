@@ -42,13 +42,12 @@ test('GET + PUT minimal resource', async t => {
     'new?': false,
     'respond-with-entity?': true,
     'malformed?': async context => {
-      if (context.request.body) {
-        const body = await readHttpBody(context.request.body)
-        try {
-          entity = JSON.parse(body)
-        } catch (e) {
-          return true
-        }
+      const body = await readHttpBody(context.request.body)
+      if (body.length < 1) return false
+      try {
+        entity = JSON.parse(body)
+      } catch (e) {
+        return true
       }
       return false
     },
