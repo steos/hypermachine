@@ -1,3 +1,5 @@
+import { negotiateMediaType } from './http-utils'
+
 export enum Is {
   PostRedirect = 'post-redirect?',
   MovedTemporarily = 'moved-temporarily?',
@@ -453,14 +455,22 @@ const defaultResourceConfig: ResourceConfig<any> = {
       return true
     }
 
-    // TODO negotiate using "*/*" as accept header
-
     const [mediaType] = context.availableMediaTypes
     context.mediaType = mediaType
     return false
   },
 
-  'media-type-available?': context => false, //TODO
+  'media-type-available?': context => {
+    const { accept } = context.request.headers
+    if (typeof accept === 'string') {
+      const mediaType = negotiateMediaType(accept, context.availableMediaTypes)
+      if (mediaType !== null) {
+        context.mediaType = mediaType
+        return true
+      }
+    }
+    return false
+  },
 }
 
 interface TraceNode {

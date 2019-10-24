@@ -22,6 +22,22 @@ const db: Db = {
   nextId: 3,
 }
 
+type TodoPayload = Partial<Omit<Todo, 'id'>>
+
+const json = (onSuccess: (x: any) => void) => async (context: Context) => {
+  const body = await readHttpBody(context.request.body)
+  if (body.length < 1) return false
+  try {
+    // TODO this is not safe, use io-ts
+    const entity = JSON.parse(body)
+    if (entity === null) return true
+    onSuccess(entity)
+  } catch (e) {
+    return true
+  }
+  return false
+}
+
 const collectionResource: () => Resource<Todo[]> = () => {
   let entity: any = null
   let todo: Todo | null = null
@@ -41,22 +57,6 @@ const collectionResource: () => Resource<Todo[]> = () => {
     'handle-ok': () => Object.values(db.todos),
     'handle-created': () => entity,
   }
-}
-
-type TodoPayload = Partial<Omit<Todo, 'id'>>
-
-const json = (onSuccess: (x: any) => void) => async (context: Context) => {
-  const body = await readHttpBody(context.request.body)
-  if (body.length < 1) return false
-  try {
-    // TODO this is not safe, use io-ts
-    const entity = JSON.parse(body)
-    if (entity === null) return true
-    onSuccess(entity)
-  } catch (e) {
-    return true
-  }
-  return false
 }
 
 const entityResource = ({ id }: RouteArgs): Resource<Todo> | null => {
