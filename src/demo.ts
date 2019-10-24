@@ -43,6 +43,10 @@ const collectionResource: () => Resource<Todo[]> = () => {
   let todo: Todo | null = null
   return {
     'allowed-methods': ['HEAD', 'GET', 'POST'],
+    'available-media-types': {
+      'application/json': x => JSON.stringify(x),
+      'text/csv': todos => todos.map(({ id, text, done }) => `${id};"${text}";${done}`).join(`\n`),
+    },
     'malformed?': json(x => {
       entity = x
     }),

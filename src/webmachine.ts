@@ -1,4 +1,4 @@
-import { negotiateMediaType } from './http-utils'
+import { negotiateMediaType, NegotiatedMediaType } from './http-utils'
 
 export enum Is {
   PostRedirect = 'post-redirect?',
@@ -351,7 +351,7 @@ export interface HttpRequest {
 }
 
 export type Context = {
-  mediaType?: string
+  negotiatedMediaType?: NegotiatedMediaType
   etag?: string
   readonly request: HttpRequest
   readonly availableMediaTypes: string[]
@@ -363,7 +363,7 @@ export type Context = {
 
 export type HttpBody = string | AsyncIterable<any>
 
-export type Serializer<T> = (x: T) => HttpBody
+export type Serializer<T> = (x: T, context: Context) => HttpBody
 
 export type HttpHeaders = Record<string, string | string[] | undefined>
 
@@ -455,17 +455,15 @@ const defaultResourceConfig: ResourceConfig<any> = {
       return true
     }
 
-    const [mediaType] = context.availableMediaTypes
-    context.mediaType = mediaType
     return false
   },
 
   'media-type-available?': context => {
     const { accept } = context.request.headers
     if (typeof accept === 'string') {
-      const mediaType = negotiateMediaType(accept, context.availableMediaTypes)
-      if (mediaType !== null) {
-        context.mediaType = mediaType
+      const negotiatedMediaType = negotiateMediaType(accept, context.availableMediaTypes)
+      if (negotiatedMediaType !== null) {
+        context.negotiatedMediaType = negotiatedMediaType
         return true
       }
     }
@@ -543,13 +541,10 @@ const webmachine = async <T>(
 
   let body = undefined
   if (result !== null) {
-    const mediaType: string | undefined = context.mediaType
-    if (mediaType === undefined) {
-      const traceStr = trace.map(printTraceNode).join(`\n`)
-      throw new Error(`failed to negotiate mediaType\n${traceStr}`)
-    }
-    const serializer: Serializer<T> = res['available-media-types'][mediaType]
-    body = serializer(result)
+    const negotiatedMediaType = context.negotiatedMediaType
+    const type = negotiatedMediaType ? negotiatedMediaType.type : context.availableMediaTypes[0]
+    const serializer: Serializer<T> = res['available-media-types'][type]
+    body = serializer(result, context)
   }
   return { body, status: node.status, headers: headers(request, context, trace) }
 }

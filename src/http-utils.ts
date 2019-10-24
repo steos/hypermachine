@@ -1,4 +1,10 @@
-import { parser as acceptParser, MediaRange, compareMediaRange, MediaType } from './accept-header'
+import {
+  parser as acceptParser,
+  MediaRange,
+  Parameter as MediaParam,
+  compareMediaRange,
+  MediaType,
+} from './accept-header'
 
 const wkday = '(Mon|Tue|Wed|Thu|Fri|Sat|Sun)'
 const month = '(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
@@ -29,7 +35,16 @@ const parseMediaType = (x: string): MediaType => {
   return { type, subtype }
 }
 
-export const negotiateMediaType = (accept: string, available: string[]): string | null => {
+export interface NegotiatedMediaType {
+  type: string
+  params: MediaParam[]
+  quality: number
+}
+
+export const negotiateMediaType = (
+  accept: string,
+  available: string[]
+): NegotiatedMediaType | null => {
   const result = acceptParser.parse(accept)
   if (result.length < 1) {
     throw new Error('malformed accept header')
@@ -45,7 +60,8 @@ export const negotiateMediaType = (accept: string, available: string[]): string 
   )
   for (let mediaRange of mediaRanges) {
     for (let type of acceptable) {
-      if (mediaRangeSatisfiesType(mediaRange, parseMediaType(type))) return type
+      if (mediaRangeSatisfiesType(mediaRange, parseMediaType(type)))
+        return { type: type, quality: mediaRange.quality, params: mediaRange.params }
     }
   }
   return null
