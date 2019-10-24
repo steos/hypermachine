@@ -59,7 +59,7 @@ test('GET + PUT minimal resource', async t => {
   const payload = { lorem: 'ipsum' }
   const result = await webmachine(resource, jsonPUT(payload, { 'x-webmachine-trace': 'enable' }))
 
-  console.dir(result, { depth: 10 })
+  // console.dir(result, { depth: 10 })
   t.is(result.status, 200)
 
   if (!result.body) {
