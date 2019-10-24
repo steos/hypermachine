@@ -33,33 +33,33 @@ const readBody = async (body: HttpBody, encoding: string = 'utf8') => {
   return str
 }
 
-type EntityContext = {
-  entity: any
-}
+type TodoPayload = Partial<Omit<Todo, 'id'>>
 
-const entityResource = ({ id }: RouteArgs): Resource<Todo, EntityContext> | null => {
+const entityResource = ({ id }: RouteArgs): Resource<Todo> | null => {
   if (!todos[id]) return null
+  let entity: TodoPayload | null = null
   return {
     'allowed-methods': ['HEAD', 'GET', 'PUT'],
     'new?': false,
     'respond-with-entity?': true,
     'handle-ok': () => todos[id],
     'malformed?': async context => {
-      //TODO
       if (!context.request.body) return false
       const body = await readBody(context.request.body)
       if (body.length < 1) return false
-      //   console.log('body', body)
       try {
-        context.entity = JSON.parse(body)
+        // TODO this is not safe, use io-ts
+        entity = JSON.parse(body)
+        if (entity === null) return true
       } catch (e) {
         return true
       }
       return false
     },
-    'put!': context => {
-      //   console.log('PUT!', context.entity)
-      todos[id] = context.entity
+    'put!': () => {
+      if (entity === null) throw new Error()
+      const todo: Todo = { ...todos[id], ...entity, id }
+      todos[id] = todo
     },
   }
 }

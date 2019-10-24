@@ -1,8 +1,6 @@
 import test from 'ava'
 
 import webmachine, { ResourceConfig, HttpHeaders, HttpBody } from './webmachine'
-// import * as wm from './webmachine'
-// import { IncomingMessage } from 'http'
 
 type MyError = { error: string }
 interface MyThing {
@@ -38,7 +36,7 @@ const readBody = async (body: HttpBody, encoding: string = 'utf8'): Promise<stri
 
 test('GET minimal resource', async t => {
   const foo = { foo: 'asdf', bar: false }
-  const result = await webmachine({ 'handle-ok': foo }, GET(), {})
+  const result = await webmachine({ 'handle-ok': foo }, GET())
 
   t.is(result.status, 200)
   t.is(result.body, JSON.stringify(foo))
@@ -47,37 +45,33 @@ test('GET minimal resource', async t => {
 test('GET + PUT minimal resource', async t => {
   const initialEntity = { foo: 'bar' }
   type Entity = Record<string, any>
-  type MyContext = {
-    entity: Entity
+  const state: { entity: Entity } = {
+    entity: initialEntity,
   }
-  let ctx: MyContext = { entity: initialEntity }
-  const resource: Partial<ResourceConfig<Entity, MyContext>> = {
+  let entity: Entity | null = null
+  const resource: Partial<ResourceConfig<Entity>> = {
     'allowed-methods': ['GET', 'PUT'],
-    'handle-ok': () => ctx.entity,
+    'handle-ok': () => state.entity,
     'new?': false,
     'respond-with-entity?': true,
     'malformed?': async context => {
       if (context.request.body) {
         const body = await readBody(context.request.body)
         try {
-          const entity = JSON.parse(body)
-          context.entity = entity
+          entity = JSON.parse(body)
         } catch (e) {
           return true
         }
       }
       return false
     },
-    'put!': context => {
-      ctx.entity = context.entity
+    'put!': () => {
+      if (entity === null) throw new Error()
+      state.entity = entity
     },
   }
   const payload = { lorem: 'ipsum' }
-  const result = await webmachine(
-    resource,
-    jsonPUT(payload, { 'x-webmachine-trace': 'enable' }),
-    ctx
-  )
+  const result = await webmachine(resource, jsonPUT(payload, { 'x-webmachine-trace': 'enable' }))
 
   console.dir(result, { depth: 10 })
   t.is(result.status, 200)
@@ -89,7 +83,7 @@ test('GET + PUT minimal resource', async t => {
   const body = await readBody(result.body)
   t.deepEqual(JSON.parse(body), payload)
 
-  const result2 = await webmachine(resource, GET(), {})
+  const result2 = await webmachine(resource, GET())
   if (!result2.body) {
     t.fail()
     return

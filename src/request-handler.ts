@@ -14,16 +14,12 @@ const requestHandler = <T>(route: Router<T>) => async (
     res.end()
     return
   }
-  const response = await webmachine(
-    resource,
-    {
-      method: req.method,
-      headers: req.headers,
-      url: req.url,
-      body: req,
-    },
-    {}
-  )
+  const response = await webmachine(resource, {
+    method: req.method,
+    headers: req.headers,
+    url: req.url,
+    body: req,
+  })
   //   console.dir(response, { depth: 10 })
   res.writeHead(response.status, response.headers)
   if (response.body) {

@@ -316,9 +316,9 @@ const whenServiceAvailable = decision(
   handleServiceNotAvailable
 )
 
-export type Lazy<T, U> = T | Promise<T> | ((context: U & Context) => T | Promise<T>)
+export type Lazy<T> = T | Promise<T> | ((context: Context) => T | Promise<T>)
 
-export type ActionFn<T> = (context: T & Context) => Promise<void> | void
+export type ActionFn = (context: Context) => Promise<void> | void
 
 type MediaTypes<T> = Record<string, Serializer<T>>
 
@@ -332,14 +332,14 @@ export interface Directives<T> {
 
 export type ResourceConfig<T, U = {}> = {
   readonly [S in Handle | Action | Is]?: (S extends Handle
-    ? Lazy<T, U & Context>
+    ? Lazy<T>
     : S extends Action
-    ? ActionFn<U & Context>
-    : Lazy<boolean, U & Context>)
+    ? ActionFn
+    : Lazy<boolean>)
 } &
   Directives<T>
 
-export type Resource<T, U = {}> = Partial<ResourceConfig<T, U & Context>>
+export type Resource<T> = Partial<ResourceConfig<T>>
 
 export interface HttpRequest {
   readonly headers: HttpHeaders
@@ -470,17 +470,17 @@ interface TraceNode {
 
 const traceHeaderName = 'X-Webmachine-Trace'
 
-const unwrap = async <T, U>(val: Lazy<T, U>, context: U & Context): Promise<T> => {
+const unwrap = async <T>(val: Lazy<T>, context: Context): Promise<T> => {
   if (val instanceof Function) {
     return val(context)
   }
   return val
 }
 
-const resolve = async <T, U>(
+const resolve = async <T>(
   node: TreeNode,
-  resource: ResourceConfig<T, U & Context>,
-  context: U & Context,
+  resource: ResourceConfig<T>,
+  context: Context,
   trace: TraceNode[]
 ): Promise<HandlerNode> => {
   if (node.kind === 'handler') {
@@ -512,14 +512,12 @@ const headers = (request: HttpRequest, context: Context, trace: TraceNode[]): Ht
   return headers
 }
 
-const webmachine = async <T, U>(
-  resource: Resource<T, U>,
-  request: HttpRequest,
-  userContext: U
+const webmachine = async <T>(
+  resource: Resource<T>,
+  request: HttpRequest
 ): Promise<HttpResponse> => {
-  const res: ResourceConfig<T, U> = { ...defaultResourceConfig, ...resource }
-  const context: U & Context = {
-    ...userContext,
+  const res: ResourceConfig<T> = { ...defaultResourceConfig, ...resource }
+  const context: Context = {
     request,
     allowedMethods: res['allowed-methods'],
     availableMediaTypes: Object.keys(res['available-media-types']),
