@@ -517,6 +517,12 @@ const headers = (request: HttpRequest, context: Context, trace: TraceNode[]): Ht
   if (enableTrace) {
     headers[traceHeaderName] = trace.map(printTraceNode)
   }
+
+  headers['Content-Type'] = context.negotiatedMediaType
+    ? context.negotiatedMediaType.type
+    : context.availableMediaTypes[0]
+
+  headers['Vary'] = 'Accept'
   return headers
 }
 
