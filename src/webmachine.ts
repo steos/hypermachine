@@ -1,4 +1,5 @@
 import { negotiateMediaType, NegotiatedMediaType } from './http-utils'
+import { StringDecoder } from 'string_decoder'
 
 export enum Is {
   PostRedirect = 'post-redirect?',
@@ -558,13 +559,15 @@ const webmachine = async <T>(
 export const readHttpBody = async (body: HttpBody, encoding: string = 'utf8'): Promise<string> => {
   if (typeof body === 'string') return body
   let str = ''
+  const decoder = new StringDecoder(encoding);
   for await (let chunk of body) {
     if (typeof chunk === 'string') {
       str += chunk
     } else if (chunk instanceof Buffer) {
-      str += chunk.toString(encoding)
+      str += decoder.write(chunk);
     }
   }
+  str += decoder.end()
   return str
 }
 

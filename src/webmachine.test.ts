@@ -61,12 +61,9 @@ test('GET + PUT minimal resource', async t => {
 
   // console.dir(result, { depth: 10 })
   t.is(result.status, 200)
+  t.truthy(result.body);
 
-  if (!result.body) {
-    t.fail()
-    return
-  }
-  const body = await readHttpBody(result.body)
+  const body = await readHttpBody(result.body!)
   t.deepEqual(JSON.parse(body), payload)
 
   const result2 = await webmachine(resource, GET())
@@ -77,4 +74,14 @@ test('GET + PUT minimal resource', async t => {
   const body2 = await readHttpBody(result2.body)
   t.deepEqual(JSON.parse(body2), payload)
   //TODO
+})
+
+test('readHttpBody', async t => {
+  const b = Buffer.from('aöb')
+  const body = {[Symbol.asyncIterator]: async function*() {
+      yield b.slice(0, 2)
+      yield b.slice(2)
+  }}
+  const x = await readHttpBody(body)
+  t.is(x, 'aöb')
 })
