@@ -1,18 +1,18 @@
 {
   "scripts": {
-    "test": "ava --no-color -v",
+    "test": "ava -v",
     "start": "node -r ts-node/register src/demo.ts"
   },
   "dependencies": {
-    "@types/node": "^12.11.1"
+    "@types/node": "^12.12.18"
   },
   "devDependencies": {
     "ava": "^2.4.0",
     "esm": "^3.0.17",
-    "nodemon": "^1.19.4",
-    "prettier": "^1.18.2",
-    "ts-node": "^8.4.1",
-    "typescript": "^3.6.4"
+    "nodemon": "^2.0.2",
+    "prettier": "^1.19.1",
+    "ts-node": "^8.5.4",
+    "typescript": "^3.7.3"
   },
   "ava": {
     "compileEnhancements": false,
