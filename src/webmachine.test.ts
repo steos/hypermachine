@@ -1,6 +1,7 @@
 import test from 'ava'
 
-import webmachine, { ResourceConfig, HttpHeaders, HttpBody, readHttpBody } from './webmachine'
+import webmachine, { ResourceConfig } from './webmachine'
+import * as Http from './http'
 
 type MyError = { error: string }
 interface MyThing {
@@ -10,16 +11,16 @@ interface MyThing {
 type MyThingCollection = { items: MyThing[]; meta: string }
 type MyResponse = MyError | MyThing | MyThingCollection
 
-const GET = (headers: HttpHeaders = {}) => ({ method: 'GET', headers, url: '', body: '' })
+const GET = (headers: Http.Headers = {}) => ({ method: 'GET', headers, url: '', body: '' })
 
-const PUT = (body: HttpBody, headers: HttpHeaders = {}) => ({
+const PUT = (body: Http.Body, headers: Http.Headers = {}) => ({
   method: 'PUT',
   headers,
   url: '',
   body,
 })
 
-const jsonPUT = (body: any, headers: HttpHeaders = {}) => PUT(JSON.stringify(body), headers)
+const jsonPUT = (body: any, headers: Http.Headers = {}) => PUT(JSON.stringify(body), headers)
 
 test('GET minimal resource', async t => {
   const foo = { foo: 'asdf', bar: false }
@@ -42,7 +43,7 @@ test('GET + PUT minimal resource', async t => {
     'new?': false,
     'respond-with-entity?': true,
     'malformed?': async context => {
-      const body = await readHttpBody(context.request.body)
+      const body = await Http.readBody(context.request.body)
       if (body.length < 1) return false
       try {
         entity = JSON.parse(body)
@@ -61,9 +62,9 @@ test('GET + PUT minimal resource', async t => {
 
   // console.dir(result, { depth: 10 })
   t.is(result.status, 200)
-  t.truthy(result.body);
+  t.truthy(result.body)
 
-  const body = await readHttpBody(result.body!)
+  const body = await Http.readBody(result.body!)
   t.deepEqual(JSON.parse(body), payload)
 
   const result2 = await webmachine(resource, GET())
@@ -71,17 +72,19 @@ test('GET + PUT minimal resource', async t => {
     t.fail()
     return
   }
-  const body2 = await readHttpBody(result2.body)
+  const body2 = await Http.readBody(result2.body)
   t.deepEqual(JSON.parse(body2), payload)
   //TODO
 })
 
 test('readHttpBody', async t => {
   const b = Buffer.from('aöb')
-  const body = {[Symbol.asyncIterator]: async function*() {
+  const body = {
+    [Symbol.asyncIterator]: async function* () {
       yield b.slice(0, 2)
       yield b.slice(2)
-  }}
-  const x = await readHttpBody(body)
+    },
+  }
+  const x = await Http.readBody(body)
   t.is(x, 'aöb')
 })

@@ -1,8 +1,8 @@
 import { IncomingMessage, ServerResponse } from 'http'
-import webmachine from './webmachine'
+import webmachine, { Resource } from './webmachine'
 import { Router } from './router'
 
-const requestHandler = <T>(route: Router<T>) => async (
+const requestHandler = <T extends Resource<any>>(route: Router<T>) => async (
   req: IncomingMessage,
   res: ServerResponse
 ) => {

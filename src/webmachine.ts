@@ -1,5 +1,5 @@
 import { negotiateMediaType, NegotiatedMediaType } from './http-utils'
-import { StringDecoder } from 'string_decoder'
+import * as Http from './http'
 
 export enum Is {
   PostRedirect = 'post-redirect?',
@@ -334,27 +334,20 @@ export interface Directives<T> {
 }
 
 export type ResourceConfig<T> = {
-  readonly [S in Handle | Action | Is]?: (S extends Handle
+  readonly [S in Handle | Action | Is]?: S extends Handle
     ? Lazy<T>
     : S extends Action
     ? ActionFn
-    : Lazy<boolean>)
+    : Lazy<boolean>
 } &
   Directives<T>
 
 export type Resource<T> = Partial<ResourceConfig<T>>
 
-export interface HttpRequest {
-  readonly headers: HttpHeaders
-  readonly url: string
-  readonly body: HttpBody
-  readonly method: string
-}
-
 export type Context = {
   negotiatedMediaType?: NegotiatedMediaType
   etag?: string
-  readonly request: HttpRequest
+  readonly request: Http.Request
   readonly availableMediaTypes: string[]
   readonly allowedMethods: string[]
   readonly availableLanguages: string[]
@@ -362,17 +355,7 @@ export type Context = {
   readonly availableEncodings: string[]
 }
 
-export type HttpBody = string | AsyncIterable<any>
-
-export type Serializer<T> = (x: T, context: Context) => HttpBody
-
-export type HttpHeaders = Record<string, string | string[] | undefined>
-
-export interface HttpResponse {
-  readonly body?: HttpBody
-  readonly status: number
-  readonly headers: HttpHeaders
-}
+export type Serializer<T> = (x: T, context: Context) => Http.Body
 
 const methodEquals = (method: string) => (context: Context): boolean =>
   context.request.method === method
@@ -512,9 +495,9 @@ const resolve = async <T>(
 const printTraceNode = ({ node, value }: TraceNode): string =>
   [node.name, value].filter(x => x !== undefined).join(' ')
 
-const headers = (request: HttpRequest, context: Context, trace: TraceNode[]): HttpHeaders => {
+const headers = (request: Http.Request, context: Context, trace: TraceNode[]): Http.Headers => {
   const enableTrace = request.headers[traceHeaderName.toLowerCase()] === 'enable'
-  const headers: HttpHeaders = {}
+  const headers: Http.Headers = {}
   if (enableTrace) {
     headers[traceHeaderName] = trace.map(printTraceNode)
   }
@@ -529,8 +512,8 @@ const headers = (request: HttpRequest, context: Context, trace: TraceNode[]): Ht
 
 const webmachine = async <T>(
   resource: Resource<T>,
-  request: HttpRequest
-): Promise<HttpResponse> => {
+  request: Http.Request
+): Promise<Http.Response> => {
   const res: ResourceConfig<T> = { ...defaultResourceConfig, ...resource }
   const context: Context = {
     request,
@@ -554,21 +537,6 @@ const webmachine = async <T>(
     body = serializer(result, context)
   }
   return { body, status: node.status, headers: headers(request, context, trace) }
-}
-
-export const readHttpBody = async (body: HttpBody, encoding: string = 'utf8'): Promise<string> => {
-  if (typeof body === 'string') return body
-  let str = ''
-  const decoder = new StringDecoder(encoding);
-  for await (let chunk of body) {
-    if (typeof chunk === 'string') {
-      str += chunk
-    } else if (chunk instanceof Buffer) {
-      str += decoder.write(chunk);
-    }
-  }
-  str += decoder.end()
-  return str
 }
 
 export default webmachine

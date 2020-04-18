@@ -1,7 +1,5 @@
 import http from 'http'
-import { Resource, readHttpBody, Context } from './webmachine'
-import router, { RouteArgs, RouteTable } from './router'
-import requestHandler from './request-handler'
+import { Resource, Context, RouteArgs, RouteTable, dispatch, Http } from './index'
 
 type Todo = {
   id: string
@@ -25,7 +23,7 @@ const db: Db = {
 type TodoPayload = Partial<Omit<Todo, 'id'>>
 
 const json = (onSuccess: (x: any) => void) => async (context: Context) => {
-  const body = await readHttpBody(context.request.body)
+  const body = await Http.readBody(context.request.body)
   if (body.length < 1) return false
   try {
     // TODO this is not safe, use io-ts
@@ -87,14 +85,10 @@ const todoRoutes: RouteTable<Resource<any>> = {
   '/todos/{id}': entityResource,
 }
 
-const route = router(todoRoutes)
-
-const handleRequest = requestHandler(route)
-
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080
 
 const server = http.createServer()
-server.on('request', handleRequest)
+server.on('request', dispatch(todoRoutes))
 server.listen(port, () => {
   console.log(`listening on port ${port}`)
 })

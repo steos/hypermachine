@@ -3,8 +3,8 @@
   "version": "1.0.0-alpha.0",
   "description": "a webmachine implementation for node in typescript",
   "license": "BSD-3-Clause",
-  "main": "lib/webmachine.js",
-  "types": "lib/webmachine.d.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "test": "ava -v",
     "start": "node -r ts-node/register src/demo.ts",
