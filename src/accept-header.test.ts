@@ -105,7 +105,10 @@ test('rankMediaRange', t => {
       type: 'text',
       subtype: 'html',
       quality: 1,
-      params: [{ name: 'level', value: '1' }, { name: 'foo', value: 'bar' }],
+      params: [
+        { name: 'level', value: '1' },
+        { name: 'foo', value: 'bar' },
+      ],
     })
   )
 })

@@ -22,7 +22,7 @@ export const parseDate = (s: string): Date | null => {
 }
 
 const mediaTypesMatch = (a: MediaType, b: MediaType) => {
-  if (a.type === '*' && b.subtype === '*') return true
+  if (a.type === '*' && a.subtype === '*') return true
   if (a.subtype === '*') return a.type === b.type
   return a.type === b.type && a.subtype === b.subtype
 }
