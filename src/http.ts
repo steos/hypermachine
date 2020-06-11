@@ -17,7 +17,7 @@ export interface Request {
   readonly method: string
 }
 
-export const readBody = async (body: Body, encoding: string = 'utf8'): Promise<string> => {
+export const readBody = async (body: Body, encoding: BufferEncoding = 'utf8'): Promise<string> => {
   if (typeof body === 'string') return body
   let str = ''
   const decoder = new StringDecoder(encoding)

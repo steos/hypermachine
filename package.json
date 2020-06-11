@@ -12,7 +12,7 @@
     "prepublish": "tsc"
   },
   "dependencies": {
-    "@types/node": "^13.11.0"
+    "@types/node": "^14.0.13"
   },
   "devDependencies": {
     "ava": "^3.5.2",
