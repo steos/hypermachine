@@ -455,6 +455,118 @@ const defaultResourceConfig: ResourceConfig<any> = {
   },
 }
 
+type Writeable<T> = { -readonly [P in keyof T]: T[P] }
+
+class ResourceBuilder<T> {
+  private resource: Writeable<Resource<T>> = { ...defaultResourceConfig }
+  build(): Resource<T> {
+    return { ...this.resource }
+  }
+  private setHandle = (key: Handle) => (x: Lazy<T>) => {
+    this.resource[key] = x
+    return this
+  }
+  private setAction = (key: Action) => (x: ActionFn) => {
+    this.resource[key] = x
+    return this
+  }
+  private setDecision = (key: Is) => (x: Lazy<boolean>) => {
+    this.resource[key] = x
+    return this
+  }
+
+  doPut = this.setAction(Action.Put)
+  doPost = this.setAction(Action.Post)
+  doPatch = this.setAction(Action.Patch)
+  doDelete = this.setAction(Action.Delete)
+
+  handleAccepted = this.setHandle(Handle.Accepted)
+  handleConflict = this.setHandle(Handle.Conflict)
+  handleCreated = this.setHandle(Handle.Created)
+  handleException = this.setHandle(Handle.Exception)
+  handleForbidden = this.setHandle(Handle.Forbidden)
+  handleGone = this.setHandle(Handle.Gone)
+  handleMalformed = this.setHandle(Handle.Malformed)
+  handleMethodNotAllowed = this.setHandle(Handle.MethodNotAllowed)
+  handleMovedPermanently = this.setHandle(Handle.MovedPermanently)
+  handleMovedTemporarily = this.setHandle(Handle.MovedTemporarily)
+  handleMultipleRepresentations = this.setHandle(Handle.MultipleRepresentations)
+  handleNoContent = this.setHandle(Handle.NoContent)
+  handleNotAcceptable = this.setHandle(Handle.NotAcceptable)
+  handleNotFound = this.setHandle(Handle.NotFound)
+  handleNotImplemented = this.setHandle(Handle.NotImplemented)
+  handleNotModified = this.setHandle(Handle.NotModified)
+  handleOk = this.setHandle(Handle.Ok)
+  handleOptions = this.setHandle(Handle.Options)
+  handlePreconditionFailed = this.setHandle(Handle.PreconditionFailed)
+  handleRequestEntityTooLarge = this.setHandle(Handle.RequestEntityTooLarge)
+  handleSeeOther = this.setHandle(Handle.SeeOther)
+  handleServiceNotAvailable = this.setHandle(Handle.ServiceNotAvailable)
+  handleUnauthorized = this.setHandle(Handle.Unauthorized)
+  handleUnknownMethod = this.setHandle(Handle.UnknownMethod)
+  handleUnprocessableEntity = this.setHandle(Handle.UnprocessableEntity)
+  handleUnsupportedMediaType = this.setHandle(Handle.UnsupportedMediaType)
+  handleUriTooLong = this.setHandle(Handle.UriTooLong)
+
+  postRedirect = this.setDecision(Is.PostRedirect)
+  movedTemporarily = this.setDecision(Is.MovedTemporarily)
+  validEntityLength = this.setDecision(Is.ValidEntityLength)
+  mediaTypeAvailable = this.setDecision(Is.MediaTypeAvailable)
+  knownMethod = this.setDecision(Is.KnownMethod)
+  modifiedSince = this.setDecision(Is.ModifiedSince)
+  etagMatchesForIfMatch = this.setDecision(Is.EtagMatchesForIfMatch)
+  ifMatchStar = this.setDecision(Is.IfMatchStar)
+  postToExisting = this.setDecision(Is.PostToExisting)
+  ifModifiedSinceExists = this.setDecision(Is.IfModifiedSinceExists)
+  methodPut = this.setDecision(Is.MethodPut)
+  canPutToMissing = this.setDecision(Is.CanPutToMissing)
+  canPostToGone = this.setDecision(Is.CanPostToGone)
+  isOptions = this.setDecision(Is.IsOptions)
+  postToMissing = this.setDecision(Is.PostToMissing)
+  putToDifferentUrl = this.setDecision(Is.PutToDifferentUrl)
+  ifMatchExists = this.setDecision(Is.IfMatchExists)
+  languageAvailable = this.setDecision(Is.LanguageAvailable)
+  ifMatchStarExistsForMissing = this.setDecision(Is.IfMatchStarExistsForMissing)
+  processable = this.setDecision(Is.Processable)
+  validContentHeader = this.setDecision(Is.ValidContentHeader)
+  ifNoneMatchStar = this.setDecision(Is.IfNoneMatchStar)
+  conflict = this.setDecision(Is.Conflict)
+  putToExisting = this.setDecision(Is.PutToExisting)
+  allowed = this.setDecision(Is.Allowed)
+  existed = this.setDecision(Is.Existed)
+  serviceAvailable = this.setDecision(Is.ServiceAvailable)
+  unmodifiedSince = this.setDecision(Is.UnmodifiedSince)
+  deleteEnacted = this.setDecision(Is.DeleteEnacted)
+  acceptLanguageExists = this.setDecision(Is.AcceptLanguageExists)
+  ifNoneMatchExists = this.setDecision(Is.IfNoneMatchExists)
+  charsetAvailable = this.setDecision(Is.CharsetAvailable)
+  methodPatch = this.setDecision(Is.MethodPatch)
+  acceptEncodingExists = this.setDecision(Is.AcceptEncodingExists)
+  exists = this.setDecision(Is.Exists)
+  methodDelete = this.setDecision(Is.MethodDelete)
+  canPostToMissing = this.setDecision(Is.CanPostToMissing)
+  knownContentType = this.setDecision(Is.KnownContentType)
+  movedPermanently = this.setDecision(Is.MovedPermanently)
+  ifModifiedSinceValidDate = this.setDecision(Is.IfModifiedSinceValidDate)
+  malformed = this.setDecision(Is.Malformed)
+  ifUnmodifiedSinceValidDate = this.setDecision(Is.IfUnmodifiedSinceValidDate)
+  multipleRepresentations = this.setDecision(Is.MultipleRepresentations)
+  etagMatchesForIfNone = this.setDecision(Is.EtagMatchesForIfNone)
+  respondWithEntity = this.setDecision(Is.RespondWithEntity)
+  methodAllowed = this.setDecision(Is.MethodAllowed)
+  uriTooLong = this.setDecision(Is.UriTooLong)
+  ifUnmodifiedSinceExists = this.setDecision(Is.IfUnmodifiedSinceExists)
+  postToGone = this.setDecision(Is.PostToGone)
+  acceptCharSetExists = this.setDecision(Is.AcceptCharSetExists)
+  encodingAvailable = this.setDecision(Is.EncodingAvailable)
+  authorized = this.setDecision(Is.Authorized)
+  acceptExists = this.setDecision(Is.AcceptExists)
+  ifNoneMatch = this.setDecision(Is.IfNoneMatch)
+  isNew = this.setDecision(Is.New)
+}
+
+export const resource = <T>(): ResourceBuilder<T> => new ResourceBuilder()
+
 interface TraceNode {
   node: TreeNode
   value?: string
