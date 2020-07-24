@@ -475,6 +475,31 @@ class ResourceBuilder<T> {
     return this
   }
 
+  setAvailableMediaTypes(mediaTypes: Record<string, Serializer<T>>) {
+    this.resource['available-media-types'] = mediaTypes
+    return this
+  }
+
+  setAllowedMethods(methods: string[]) {
+    this.resource['allowed-methods'] = methods
+    return this
+  }
+
+  setAvailableLanguages(languages: string[]) {
+    this.resource['available-languages'] = languages
+    return this
+  }
+
+  setAvailableCharsets(charsets: string[]) {
+    this.resource['available-charsets'] = charsets
+    return this
+  }
+
+  setAvailableEncodings(encodings: string[]) {
+    this.resource['available-encodings'] = encodings
+    return this
+  }
+
   doPut = this.setAction(Action.Put)
   doPost = this.setAction(Action.Post)
   doPatch = this.setAction(Action.Patch)
